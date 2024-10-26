@@ -6,9 +6,9 @@ console.log(isStringMaxLength('проверяемая строка', 18));
 console.log(isStringMaxLength('проверяемая строка', 10));
 
 function isPalindrome(str) {
-  const normStr=str.toLowerCase().replaceAll(' ', '');
-  const reversedStr= normStr.split('').reverse().join('');
-  return normStr=== reversedStr;
+  const lowerString = str.toLowerCase().replaceAll(' ', '');
+  const reversedStr= lowerString.split('').reverse().join('');
+  return lowerString === reversedStr;
 }
 console.log(isPalindrome('топот'));
 console.log(isPalindrome('ДовОд'));
