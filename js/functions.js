@@ -1,3 +1,15 @@
+function isStringMaxLength(str, maxLength) {
+  return str.length <= maxLength;
+}
+
+function isPalindrome(str) {
+  const lowerString = str.toLowerCase().replaceAll(' ', '');
+  const reversedStr = lowerString.split('').reverse().join('');
+  return lowerString === reversedStr;
+}
+
+
+
 function parseTime(time) {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
