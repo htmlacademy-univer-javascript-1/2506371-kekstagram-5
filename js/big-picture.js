@@ -95,3 +95,4 @@ function onEscapePress(evt) {
 commentsLoader.addEventListener('click', renderComments);
 
 export { openBigPicture };
+
