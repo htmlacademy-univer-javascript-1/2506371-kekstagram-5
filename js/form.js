@@ -1,21 +1,21 @@
-import { photos } from './main.js';
-import { renderThumbnails } from './thumbnails.js';
+import { uploadForm, fileInput, hashtagInput, descriptionInput } from './form-api.js';
 
-
-const uploadForm = document.querySelector('.img-upload__form');
-const hashtagInput = uploadForm.querySelector('.text__hashtags');
-const descriptionInput = uploadForm.querySelector('.text__description');
-const fileInput = uploadForm.querySelector('.img-upload__input');
 const uploadOverlay = document.querySelector('.img-upload__overlay'); // Блок формы
 const closeButton = uploadOverlay.querySelector('.img-upload__cancel'); // Крестик
+
+let currentScale = 100;
 const scaleSmaller = uploadOverlay.querySelector('.scale__control--smaller');
 const scaleBigger = uploadOverlay.querySelector('.scale__control--bigger');
 const scaleValue = uploadOverlay.querySelector('.scale__control--value');
 
-let currentScale = 100;
+export let currentEffect = 'none';
+const effectRadios = document.querySelectorAll('input[name="effect"]');
+const effectLevelSliderContainer = document.querySelector('.effect-level'); // Контейнер слайдера
+const effectLevelSlider = document.querySelector('.effect-level__slider');
+const effectLevelValue = document.querySelector('.effect-level__value');
 
 // Инициализация Pristine
-const pristine = new Pristine(uploadForm, {
+export const pristine = new Pristine(uploadForm, {
   classTo: 'img-upload__form',
   errorTextParent: 'img-upload__form',
   errorTextClass: 'form__error',
@@ -29,17 +29,15 @@ function validateHashtags(value) {
   const hashtags = value.trim().toLowerCase().split(/\s+/);
   const hashtagPattern = /^#[a-zа-яё0-9]{1,19}$/;
 
-  if (hashtags.length > 5) {
-    return false; // Максимум 5 хэштегов
-  }
-  return hashtags.every((tag) => hashtagPattern.test(tag)) &&
-    new Set(hashtags).size === hashtags.length; // Проверка дубликатов
+  return hashtags.length <= 5 &&
+    hashtags.every((tag) => hashtagPattern.test(tag)) &&
+    new Set(hashtags).size === hashtags.length; // Уникальность
 }
 
 pristine.addValidator(
   hashtagInput,
   validateHashtags,
-  'Хэш-теги должны начинаться с #, быть не длиннее 20 символов и без повторений. Максимум 5 хэш-тегов.'
+  'Хэш-теги должны начинаться с #, быть не длиннее 20 символов и без повторений. Максимум 5 хэштегов.'
 );
 
 // Валидация комментария
@@ -53,30 +51,32 @@ pristine.addValidator(
   'Комментарий не должен превышать 140 символов.'
 );
 
-const previewImage = uploadOverlay.querySelector('.img-upload__preview img'); // Пример выбора превью
+const previewImage = uploadOverlay.querySelector('.img-upload__preview img');
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
   if (file) {
     const imageUrl = URL.createObjectURL(file);
-    previewImage.src = imageUrl; // Обновляем изображение
-    uploadOverlay.classList.remove('hidden'); // Показываем форму
-    document.body.classList.add('modal-open'); // Добавляем класс modal-open
+    previewImage.src = imageUrl;
+    uploadOverlay.classList.remove('hidden');
+    document.body.classList.add('modal-open');
 
-    // Освобождение памяти после подгрузки
-    previewImage.onload = () => {
-      URL.revokeObjectURL(imageUrl);
-    };
+    // Установка начального состояния
+    currentEffect = 'none';
+    updateSlider(currentEffect);
+    effectLevelValue.value = '';
+    previewImage.style.filter = '';
+    pristine.reset();
+    applyScale(currentScale);
   }
 });
 
-// Функция для применения масштаба
-function applyScale(scale) {
+// --------- Функция для применения масштаба ---------
+export function applyScale(scale) {
   scaleValue.value = `${scale}%`;
   const scaleFactor = scale / 100;
   previewImage.style.transform = `scale(${scaleFactor})`;
 }
 
-// Уменьшение масштаба
 scaleSmaller.addEventListener('click', () => {
   if (currentScale > 25) {
     currentScale -= 25;
@@ -84,7 +84,6 @@ scaleSmaller.addEventListener('click', () => {
   }
 });
 
-// Увеличение масштаба
 scaleBigger.addEventListener('click', () => {
   if (currentScale < 100) {
     currentScale += 25;
@@ -92,16 +91,89 @@ scaleBigger.addEventListener('click', () => {
   }
 });
 
+// --------- Слайдер и эффекты ---------
+noUiSlider.create(effectLevelSlider, {
+  range: {
+    min: 0,
+    max: 100,
+  },
+  start: 100,
+  step: 1,
+  connect: 'lower',
+});
 
-function resetForm() {
+effectLevelSliderContainer.style.display = 'none'; // Скрываем слайдер по умолчанию
+
+function applyEffect(effect, value) {
+  const filterValue = value / 100;
+  switch (effect) {
+    case 'chrome':
+      previewImage.style.filter = `grayscale(${filterValue})`;
+      break;
+    case 'sepia':
+      previewImage.style.filter = `sepia(${filterValue})`;
+      break;
+    case 'marvin':
+      previewImage.style.filter = `invert(${value}%)`;
+      break;
+    case 'phobos':
+      previewImage.style.filter = `blur(${(value * 3) / 100}px)`;
+      break;
+    case 'heat':
+      previewImage.style.filter = `brightness(${1 + (filterValue * 2)})`;
+      break;
+    case 'none':
+    default:
+      previewImage.style.filter = '';
+      break;
+  }
+}
+
+// Обновление слайдера при переключении фильтра
+function updateSlider(effect) {
+  if (effect === 'none') {
+    effectLevelSliderContainer.style.display = 'none';
+    effectLevelValue.value = '';
+    previewImage.style.filter = '';
+  } else {
+    effectLevelSliderContainer.style.display = 'block';
+    effectLevelSlider.noUiSlider.updateOptions({
+      range: { min: 0, max: 100 },
+      start: 100,
+    });
+    effectLevelValue.value = 100;
+  }
+}
+
+// Обработчик переключения фильтров
+effectRadios.forEach((radio) => {
+  radio.addEventListener('change', (evt) => {
+    currentEffect = evt.target.value;
+    updateSlider(currentEffect);
+    applyEffect(currentEffect, effectLevelSlider.noUiSlider.get());
+  });
+});
+
+// Обновление эффекта при движении слайдера
+effectLevelSlider.noUiSlider.on('update', (values) => {
+  const value = Math.round(values[0]);
+  effectLevelValue.value = value;
+  applyEffect(currentEffect, value);
+});
+
+// --------- Закрытие формы ---------
+export function resetForm() {
   uploadForm.reset();
   pristine.reset();
   uploadOverlay.classList.add('hidden');
   document.body.classList.remove('modal-open');
-  fileInput.value = ''; // Очищаем контрол загрузки файла
-  currentScale = 100; // Сбрасываем масштаб
+  fileInput.value = '';
+  currentScale = 100;
   applyScale(currentScale);
-  previewImage.className = ''; // Удаляем классы эффектов
+  previewImage.className = '';
+  currentEffect = 'none';
+  updateSlider(currentEffect);
+  previewImage.style.filter = '';
 }
 
 // Закрытие формы по Esc
@@ -115,95 +187,3 @@ document.addEventListener('keydown', (evt) => {
 closeButton.addEventListener('click', () => {
   resetForm();
 });
-
-// Обработчик отправки формы
-uploadForm.addEventListener('submit', (evt) => {
-  evt.preventDefault();
-  const isValid = pristine.validate();
-  if (isValid) {
-    const formData = new FormData(uploadForm);
-    const submitButton = uploadForm.querySelector('.img-upload__submit');
-    submitButton.disabled = true; // Блокируем кнопку
-
-    fetch('https://29.javascript.htmlacademy.pro/kekstagram', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => {
-        if (response.ok) {
-          // В обработчике отправки формы добавляем новую фотографию
-          const newPhoto = {
-            id: photos.length + 1,
-            url: URL.createObjectURL(fileInput.files[0]),
-            description: descriptionInput.value || 'Новое фото',
-            likes: 0,
-            comments: [] // Пустой массив, если нет комментариев
-          };
-          photos.push(newPhoto); // Добавляем фото в массив
-          renderThumbnails([newPhoto]); // Добавляем миниатюру
-
-          showSuccessMessage(); // Показ успешного сообщения
-          resetForm();
-        } else {
-          throw new Error('Ошибка отправки данных');
-        }
-      })
-      .catch(() => {
-        showErrorMessage(); // Показ сообщения об ошибке
-      })
-      .finally(() => {
-        submitButton.disabled = false; // Разблокируем кнопку
-      });
-  }
-});
-
-
-function showSuccessMessage() {
-  const successTemplate = document.querySelector('#success').content;
-  const successElement = successTemplate.cloneNode(true);
-  document.body.appendChild(successElement);
-
-  const closeButton = document.querySelector('.success__button');
-  const successOverlay = document.querySelector('.success');
-
-  function closeSuccess() {
-    successOverlay.remove();
-  }
-
-  closeButton.addEventListener('click', closeSuccess);
-  document.addEventListener('keydown', (evt) => {
-    if (evt.key === 'Escape') {
-      closeSuccess();
-    }
-  });
-  document.addEventListener('click', (evt) => {
-    if (evt.target === successOverlay) {
-      closeSuccess();
-    }
-  });
-}
-
-function showErrorMessage() {
-  const errorTemplate = document.querySelector('#error').content;
-  const errorElement = errorTemplate.cloneNode(true);
-  document.body.appendChild(errorElement);
-
-  const closeButton = document.querySelector('.error__button');
-  const errorOverlay = document.querySelector('.error');
-
-  function closeError() {
-    errorOverlay.remove();
-  }
-
-  closeButton.addEventListener('click', closeError);
-  document.addEventListener('keydown', (evt) => {
-    if (evt.key === 'Escape') {
-      closeError();
-    }
-  });
-  document.addEventListener('click', (evt) => {
-    if (evt.target === errorOverlay) {
-      closeError();
-    }
-  });
-}

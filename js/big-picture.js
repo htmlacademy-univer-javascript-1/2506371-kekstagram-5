@@ -38,26 +38,28 @@ function renderComments() {
     commentsLoader.classList.add('hidden');
   }
 }
-
 function openBigPicture(photoData) {
-  // Данные фотографии
   imageElement.src = photoData.url;
   imageElement.alt = photoData.description;
   likesCount.textContent = photoData.likes;
   commentsCount.textContent = photoData.comments.length;
   descriptionElement.textContent = photoData.description;
 
-  // Очистка старых комментариев
+  // Очистка старых комментариев и сброс всех предыдущих эффектов
   socialComments.innerHTML = '';
+  imageElement.className = '';
+
+  // Применение эффекта, если он есть
+  if (photoData.effect && photoData.effect !== 'none') {
+    imageElement.classList.add(`effects__preview--${photoData.effect}`);
+  }
 
   // Инициализация комментариев
   currentComments = photoData.comments;
   displayedCommentsCount = 0;
 
-  // Рендер первых комментариев
   renderComments();
 
-  // Логика отображения блока комментариев
   if (currentComments.length > 0) {
     commentCountBlock.classList.remove('hidden');
     if (currentComments.length > commentsPerPage) {
@@ -78,7 +80,6 @@ function openBigPicture(photoData) {
   document.addEventListener('keydown', onEscapePress);
 }
 
-
 function closeBigPicture() {
   bigPicture.classList.add('hidden');
   document.body.classList.remove('modal-open');
@@ -95,4 +96,3 @@ function onEscapePress(evt) {
 commentsLoader.addEventListener('click', renderComments);
 
 export { openBigPicture };
-
