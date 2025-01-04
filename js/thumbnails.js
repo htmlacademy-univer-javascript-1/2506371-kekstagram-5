@@ -1,7 +1,6 @@
 import { openBigPicture } from './big-picture.js';
 
 const thumbnailTemplate = document.querySelector('#picture').content.querySelector('.picture');
-const picturesContainer = document.querySelector('.pictures');
 
 function createThumbnail(photoData) {
   const thumbnail = thumbnailTemplate.cloneNode(true);
@@ -12,25 +11,32 @@ function createThumbnail(photoData) {
   thumbnail.querySelector('.picture__likes').textContent = photoData.likes;
   thumbnail.querySelector('.picture__comments').textContent = photoData.comments.length;
 
-  // Открытие полноразмерного изображения при клике
-  thumbnail.addEventListener('click', function () {
+  thumbnail.addEventListener('click', () => {
     openBigPicture(photoData); // Открываем большое изображение
   });
 
   return thumbnail;
 }
 
-function renderThumbnails(photos) {
-  const container = document.querySelector('.pictures'); // Контейнер для миниатюр
-  const template = document.querySelector('#picture').content.querySelector('.picture'); // Шаблон миниатюры
+function renderThumbnails(photoArray) {
+  const thumbnailContainer = document.querySelector('.pictures');
 
-  photos.forEach((photo) => {
-    const photoElement = template.cloneNode(true);
-    photoElement.querySelector('.picture__img').src = photo.url;
-    photoElement.querySelector('.picture__likes').textContent = photo.likes;
-    photoElement.querySelector('.picture__comments').textContent = photo.comments.length;
-    container.appendChild(photoElement);
+  photoArray.forEach((photo) => {
+    const thumbnailElement = createThumbnail(photo);
+    thumbnailElement.querySelector('.picture__img').src = photo.url;
+    thumbnailElement.querySelector('.picture__likes').textContent = photo.likes;
+    thumbnailElement.querySelector('.picture__comments').textContent = photo.comments.length;
+
+    // Применяем эффект к миниатюре
+    if (photo.effect && photo.effect !== 'none') {
+      thumbnailElement.querySelector('.picture__img').classList.add(`effects__preview--${photo.effect}`);
+    }
+
+    thumbnailContainer.appendChild(thumbnailElement);
   });
 }
 
+
 export { renderThumbnails };
+
+

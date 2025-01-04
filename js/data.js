@@ -40,4 +40,3 @@ export function generatePhotos() {
   }
   return photos;
 }
-
