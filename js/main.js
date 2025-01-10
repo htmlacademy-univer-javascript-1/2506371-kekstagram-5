@@ -3,13 +3,13 @@ import { displayThumbnails } from './photo-thumbnails.js';
 import { initForm } from './form-init.js';
 
 const photosArray = [];
-const DEBOUNCE_DELAY = 500; // Задержка для оптимизации фильтрации
-const RANDOM_PHOTO_COUNT = 10; // Количество случайных изображений
-const filtersSection = document.querySelector('.img-filters'); // Блок фильтров
-const imagesContainer = document.querySelector('.pictures'); // Контейнер для картинок
+const DEBOUNCE_DELAY = 500;
+const RANDOM_PHOTO_COUNT = 10;
+const filtersSection = document.querySelector('.img-filters');
+const imagesContainer = document.querySelector('.pictures');
 const filtersWrapper = document.querySelector('.img-filters');
-let allPhotos = []; // Массив всех фотографий
-let filteredImages = []; // Массив отфильтрованных изображений
+let allPhotos = [];
+let filteredImages = [];
 
 // Функция для создания задержки (debounce)
 const debounceFunction = (callback, delay) => {
@@ -20,42 +20,37 @@ const debounceFunction = (callback, delay) => {
   };
 };
 
-// Получение случайных фотографий
 const getRandomImages = (photos) => {
   const shuffledPhotos = [...photos].sort(() => Math.random() - 0.5);
   return shuffledPhotos.slice(0, RANDOM_PHOTO_COUNT);
 };
 
-// Получение самых популярных фотографий по количеству комментариев
 const getMostDiscussedImages = (photos) => [...photos].sort((a, b) => b.comments.length - a.comments.length);
 
-// Функция для очистки старых фотографий
 const clearImages = () => {
   imagesContainer.querySelectorAll('.picture').forEach((photo) => photo.remove());
 };
 
-// Обработка фильтрации фотографий
 const handleFilterChange = debounceFunction((filter) => {
-  clearImages(); // Удаляем старые фотографии
-
+  clearImages();
   switch (filter) {
     case 'filter-default':
-      filteredImages = allPhotos; // Отображаем фотографии по умолчанию
+      filteredImages = allPhotos;
       break;
     case 'filter-random':
-      filteredImages = getRandomImages(allPhotos); // Отображаем случайные фотографии
+      filteredImages = getRandomImages(allPhotos);
       break;
     case 'filter-discussed':
-      filteredImages = getMostDiscussedImages(allPhotos); // Отображаем самые обсуждаемые
+      filteredImages = getMostDiscussedImages(allPhotos);
       break;
   }
 
-  displayThumbnails(filteredImages); // Рендерим отфильтрованные изображения
+  displayThumbnails(filteredImages);
 }, DEBOUNCE_DELAY);
 
 // Инициализация фильтров
 const initializeFilters = () => {
-  filtersSection.classList.remove('img-filters--inactive'); // Показываем фильтры
+  filtersSection.classList.remove('img-filters--inactive');
 
   filtersSection.addEventListener('click', (evt) => {
     if (evt.target.classList.contains('img-filters__button')) {
@@ -90,8 +85,6 @@ const loadImages = async () => {
   }
 };
 
-// Загружаем изображения при старте
 loadImages();
 
-// Инициализируем форму редактирования
 initForm(photosArray, displayThumbnails);
