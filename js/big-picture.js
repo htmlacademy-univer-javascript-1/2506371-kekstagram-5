@@ -1,98 +1,96 @@
-const bigPicture = document.querySelector('.big-picture');
-const imageElement = bigPicture.querySelector('.big-picture__img img');
-const likesCount = bigPicture.querySelector('.likes-count');
-const commentsCount = bigPicture.querySelector('.comments-count');
-const socialComments = bigPicture.querySelector('.social__comments');
-const descriptionElement = bigPicture.querySelector('.social__caption');
-const commentCountBlock = bigPicture.querySelector('.social__comment-count');
-const commentsLoader = bigPicture.querySelector('.comments-loader');
-const closeButton = bigPicture.querySelector('.big-picture__cancel');
-const commentsPerPage = 5;
+const fullViewContainer = document.querySelector('.big-picture');
+const fullViewImage = fullViewContainer.querySelector('.big-picture__img img');
+const likeCounter = fullViewContainer.querySelector('.likes-count');
+const commentCounter = fullViewContainer.querySelector('.comments-count');
+const commentList = fullViewContainer.querySelector('.social__comments');
+const imageDescription = fullViewContainer.querySelector('.social__caption');
+const commentStatusBlock = fullViewContainer.querySelector('.social__comment-count');
+const loadMoreButton = fullViewContainer.querySelector('.comments-loader');
+const closeButton = fullViewContainer.querySelector('.big-picture__cancel');
+const maxCommentsPerBatch = 5;
 
-let currentComments = [];
-let displayedCommentsCount = 0;
+let totalComments = [];
+let loadedCommentCount = 0;
 
-function renderComments() {
-  const nextComments = currentComments.slice(displayedCommentsCount, displayedCommentsCount + commentsPerPage);
+function displayComments() {
+  const newComments = totalComments.slice(loadedCommentCount, loadedCommentCount + maxCommentsPerBatch);
 
-  nextComments.forEach((comment) => {
-    const commentElement = document.createElement('li');
-    commentElement.classList.add('social__comment');
+  newComments.forEach((comment) => {
+    const listItem = document.createElement('li');
+    listItem.classList.add('social__comment');
 
-    commentElement.innerHTML = `
-            <img
-                class='social__picture'
-                src='${comment.avatar}'
-                alt='${comment.name}'
-                width='35' height='35'>
-            <p class='social__text'>${comment.message}</p>
-        `;
-    socialComments.appendChild(commentElement);
+    listItem.innerHTML = `
+      <img
+        class='social__picture'
+        src='${comment.avatar}'
+        alt='${comment.name}'
+        width='35' height='35'>
+      <p class='social__text'>${comment.message}</p>
+    `;
+    commentList.appendChild(listItem);
   });
 
-  displayedCommentsCount += nextComments.length;
+  loadedCommentCount += newComments.length;
 
-  commentCountBlock.textContent = `${displayedCommentsCount} из ${currentComments.length} комментариев`;
+  commentStatusBlock.textContent = `${loadedCommentCount} из ${totalComments.length} комментариев`;
 
-  if (displayedCommentsCount >= currentComments.length) {
-    commentsLoader.classList.add('hidden');
+  if (loadedCommentCount >= totalComments.length) {
+    loadMoreButton.classList.add('hidden');
   }
 }
-function openBigPicture(photoData) {
-  imageElement.src = photoData.url;
-  imageElement.alt = photoData.description;
-  likesCount.textContent = photoData.likes;
-  commentsCount.textContent = photoData.comments.length;
-  descriptionElement.textContent = photoData.description;
 
-  // Очистка старых комментариев и сброс всех предыдущих эффектов
-  socialComments.innerHTML = '';
-  imageElement.className = '';
+function showFullView(photoData) {
+  fullViewImage.src = photoData.url;
+  fullViewImage.alt = photoData.description;
+  likeCounter.textContent = photoData.likes;
+  commentCounter.textContent = photoData.comments.length;
+  imageDescription.textContent = photoData.description;
 
-  // Применение эффекта, если он есть
+  commentList.innerHTML = '';
+  fullViewImage.className = '';
+
+  // Применяем эффект, если указан
   if (photoData.effect && photoData.effect !== 'none') {
-    imageElement.classList.add(`effects__preview--${photoData.effect}`);
+    fullViewImage.classList.add(`effects__preview--${photoData.effect}`);
   }
 
-  // Инициализация комментариев
-  currentComments = photoData.comments;
-  displayedCommentsCount = 0;
+  totalComments = photoData.comments;
+  loadedCommentCount = 0;
 
-  renderComments();
+  displayComments();
 
-  if (currentComments.length > 0) {
-    commentCountBlock.classList.remove('hidden');
-    if (currentComments.length > commentsPerPage) {
-      commentsLoader.classList.remove('hidden'); // Показываем кнопку, если есть больше 5 комментариев
+  if (totalComments.length > 0) {
+    commentStatusBlock.classList.remove('hidden');
+    if (totalComments.length > maxCommentsPerBatch) {
+      loadMoreButton.classList.remove('hidden');
     } else {
-      commentsLoader.classList.add('hidden'); // Скрываем кнопку, если комментариев 5 или меньше
+      loadMoreButton.classList.add('hidden');
     }
   } else {
-    commentCountBlock.classList.add('hidden');
-    commentsLoader.classList.add('hidden');
+    commentStatusBlock.classList.add('hidden');
+    loadMoreButton.classList.add('hidden');
   }
 
-  // Открытие окна
-  bigPicture.classList.remove('hidden');
+  fullViewContainer.classList.remove('hidden');
   document.body.classList.add('modal-open');
 
-  closeButton.addEventListener('click', closeBigPicture);
-  document.addEventListener('keydown', onEscapePress);
+  closeButton.addEventListener('click', hideFullView);
+  document.addEventListener('keydown', handleEscapePress);
 }
 
-function closeBigPicture() {
-  bigPicture.classList.add('hidden');
+function hideFullView() {
+  fullViewContainer.classList.add('hidden');
   document.body.classList.remove('modal-open');
-  closeButton.removeEventListener('click', closeBigPicture);
-  document.removeEventListener('keydown', onEscapePress);
+  closeButton.removeEventListener('click', hideFullView);
+  document.removeEventListener('keydown', handleEscapePress);
 }
 
-function onEscapePress(evt) {
-  if (evt.key === 'Escape') {
-    closeBigPicture();
+function handleEscapePress(event) {
+  if (event.key === 'Escape') {
+    hideFullView();
   }
 }
 
-commentsLoader.addEventListener('click', renderComments);
+loadMoreButton.addEventListener('click', displayComments);
 
-export { openBigPicture };
+export { showFullView };
